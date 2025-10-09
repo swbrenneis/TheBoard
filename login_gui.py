@@ -5,6 +5,8 @@ from PyQt6.QtGui import QFont, QPixmap
 from PyQt6.QtCore import Qt
 from registration import NewUserDialog
 
+from buttons import MainWindow
+
 class LoginWindow(QWidget):
 
     def __init__(self):
@@ -65,6 +67,110 @@ class LoginWindow(QWidget):
         sign_up_button = QPushButton("Sign up", self)
         sign_up_button.move(120, 180)
         sign_up_button.clicked.connect(self.createNewUser)
+
+    def clickLoginButton(self):
+        """ Check if username and password match any existing
+        entries in users.txt. If found, show QMessageBox and
+        close the program. If they don't, display a warning
+        QMessageBox """
+        users = {}  # Dictionary to store user information
+        file = "files/users.txt"
+
+        try:
+            with (open(file, "r")) as f:
+                for line in f:
+                    user_info = line.split(" ")
+                    username_info = user_info[0]
+                    password_info = user_info[1].strip("\n")
+                    users[username_info] = password_info
+
+            # Collect user and password information
+            username = self.username_edit.text()
+            password = self.password_edit.text()
+
+            if (username, password) in users.items():
+                QMessageBox.information(self,
+                                        "Login Successful!",
+                                        "Login Successful!",
+                                        QMessageBox.StandardButton.Ok,
+                                        QMessageBox.StandardButton.Ok)
+                self.login_is_successful = True
+                self.close() # Close the login window
+                self.openApplicationWindow()
+            else:
+                QMessageBox.warning(self, "Error Message",
+                                    "The username or password is incorrect.",
+                                    QMessageBox.StandardButton.Close,
+                                    QMessageBox.StandardButton.Close)
+        except FileNotFoundError as error:
+            QMessageBox.warning(self, "Error",
+                              f"""<p>File not found</p>
+                                <p>Error: {error}</p>""",
+                              QMessageBox.StandardButton.Ok)
+            # Create file if it doesn't exist
+            f = open(file, "r")
+
+    def displayPasswordIfChecked(self, checked):
+        """ If QCheckButton is enabled, view the password.
+        Else, mask the password so others cannot see it """
+        if checked:
+            self.password_edit.setEchoMode(
+                QLineEdit.EchoMode.Normal
+            )
+        elif checked == False:
+            self.password_edit.setEchoMode(
+                QLineEdit.EchoMode.Password)
+
+    def createNewUser(self):
+        """ Open a dialog for creating a new account """
+        self.create_new_user_window = NewUserDialog()
+        self.create_new_user_window.show()
+
+    def openApplicationWindow(self):
+        """ Open a mock main window after the user logs in """
+        self.main_window = MainWindow()
+        self.main_window.show()
+
+    def closeEvent(self, event):
+        """ Reimplement the closing event to display a
+        QMessageBox before closing """
+        if self.login_is_successful == True:
+            event.accept()
+        else:
+            answer = QMessageBox.question(
+                self, "Quit Application?",
+                "Are you sure you want to quit?",
+                QMessageBox.StandardButton.No | QMessageBox.StandardButton.Yes,
+                QMessageBox.StandardButton.Yes)
+            if answer == QMessageBox.StandardButton.Yes:
+                event.accept()
+            if answer == QMessageBox.StandardButton.No:
+                event.ignore()
+
+class MainWindow(QWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.initializeUI()
+
+    def initializeUI(self):
+        """ Set up the application's GUI """
+        self.setMinimumSize(640, 426)
+        self.setWindowTitle("3.1 - Main Window")
+        self.setUpMainWindow()
+
+    def setUpMainWindow(self):
+        """ Create and arrange widgets in the main window """
+        image = "images/background_kingfisher.jpg"
+
+        try:
+            with open(image):
+                main_label = QLabel(self)
+                pixmap = QPixmap(image)
+                main_label.setPixmap(pixmap)
+                main_label.move(0, 0)
+        except FileNotFoundError as error:
+            print(f"Image not found. \nError: {error}")
 
 
 if __name__ == "__main__":
